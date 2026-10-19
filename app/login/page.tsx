@@ -4,16 +4,29 @@ import { useState, useEffect, type CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
 
+// Destino tras iniciar sesión: el parámetro ?next si es una ruta interna
+// (p. ej. el QR del tomo manda ?next=/tomo?...), o /panel por defecto.
+function destino() {
+  if (typeof window === "undefined") return "/panel";
+  const n = new URLSearchParams(window.location.search).get("next");
+  return n && n.startsWith("/") ? n : "/panel";
+}
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [msg, setMsg] = useState("");
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [checando, setChecando] = useState(true);
 
+  // Si ya hay sesión, redirige de una; si no, muestra el formulario.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) =>
-      setUserEmail(data.session?.user?.email ?? null)
-    );
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        window.location.href = destino();
+      } else {
+        setChecando(false);
+      }
+    });
   }, []);
 
   async function entrar() {
@@ -25,29 +38,30 @@ export default function Login() {
     if (error) {
       setMsg(error.message);
     } else {
-      const { data } = await supabase.auth.getSession();
-      setUserEmail(data.session?.user?.email ?? null);
+      window.location.href = destino();
     }
   }
 
-  async function salir() {
-    await supabase.auth.signOut();
-    setUserEmail(null);
+  const centro: CSSProperties = {
+    minHeight: "100vh",
+    background: COLOR.bg,
+    color: COLOR.text,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+  };
+
+  if (checando) {
+    return (
+      <main style={centro}>
+        <p style={{ color: COLOR.textSec }}>Cargando…</p>
+      </main>
+    );
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: COLOR.bg,
-        color: COLOR.text,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-      }}
-    >
+    <main style={centro}>
       <div
         style={{
           background: COLOR.surface,
@@ -59,38 +73,28 @@ export default function Login() {
         }}
       >
         <h1 style={{ fontSize: 20, margin: "0 0 8px" }}>Archivo Legal</h1>
-
-        {userEmail ? (
-          <>
-            <p style={{ fontSize: 14, color: COLOR.textSec }}>
-              Sesión iniciada: <b>{userEmail}</b>
-            </p>
-            <button onClick={salir} style={btnStyle}>Salir</button>
-          </>
-        ) : (
-          <>
-            <p style={{ fontSize: 13, color: COLOR.textSec, marginTop: 0 }}>
-              Ingresa con tu cuenta.
-            </p>
-            <input
-              type="email"
-              placeholder="correo"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={inputStyle}
-            />
-            <input
-              type="password"
-              placeholder="contraseña"
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-              style={inputStyle}
-            />
-            <button onClick={entrar} style={btnStyle}>Entrar</button>
-            {msg && (
-              <p style={{ color: "#A32D2D", fontSize: 13, marginBottom: 0 }}>{msg}</p>
-            )}
-          </>
+        <p style={{ fontSize: 13, color: COLOR.textSec, marginTop: 0 }}>
+          Ingresa con tu cuenta.
+        </p>
+        <input
+          type="email"
+          placeholder="correo"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && entrar()}
+          style={inputStyle}
+        />
+        <input
+          type="password"
+          placeholder="contraseña"
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && entrar()}
+          style={inputStyle}
+        />
+        <button onClick={entrar} style={btnStyle}>Entrar</button>
+        {msg && (
+          <p style={{ color: "#A32D2D", fontSize: 13, marginBottom: 0 }}>{msg}</p>
         )}
       </div>
     </main>
