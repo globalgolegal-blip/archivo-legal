@@ -16,6 +16,7 @@ const LINKS = [
   { href: "/base", label: "Base" },
   { href: "/lomos", label: "Lomos" },
   { href: "/cargas", label: "Cargas" },
+  { href: "/cargos", label: "Préstamos" },
 ];
 
 export default function Nav() {
