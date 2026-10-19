@@ -3,6 +3,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
+  import Nav from "../../components/Nav";
 
 const PAGE = 50;
 
