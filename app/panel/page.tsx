@@ -45,6 +45,7 @@ export default function Panel() {
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       }}
     >
+            <Nav />
       <header style={{ background: COLOR.navy, color: "#fff", padding: "18px 28px" }}>
         <div style={{ fontSize: 20, fontWeight: 700 }}>Panel · Global Go</div>
         <div style={{ fontSize: 13, color: COLOR.navyText, marginTop: 2 }}>
