@@ -65,18 +65,18 @@ export default function Lomos() {
 
   function Card(t: Tomo) {
     return (
-      <div style={{ height: "100%", border: `1.5px solid ${COLOR.border}`, borderRadius: 6, display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff" }}>
-        <div style={{ padding: "14px 8px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 78, borderBottom: "1px solid #eee" }}>
-          <img src={CO.logo} alt="" style={{ maxWidth: "88%", maxHeight: 64, objectFit: "contain" }} />
+      <div className="lomo-card" style={{ height: "100%", border: `1.5px solid ${COLOR.border}`, borderRadius: 6, display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff" }}>
+        <div style={{ padding: "18px 10px 14px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 104, borderBottom: "1px solid #eee" }}>
+          <img src={CO.logo} alt="" style={{ maxWidth: "94%", maxHeight: 90, objectFit: "contain" }} />
         </div>
-        <div style={{ background: CO.color, color: "#fff", textAlign: "center", fontWeight: 800, letterSpacing: 5, fontSize: 17, padding: "7px 4px" }}>LEGAL</div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 9, padding: 12, textAlign: "center" }}>
+        <div style={{ background: CO.color, color: "#fff", textAlign: "center", fontWeight: 800, letterSpacing: 5, fontSize: 17, padding: "8px 4px" }}>LEGAL</div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: 14, textAlign: "center" }}>
+          <QRCodeCanvas value={qrUrl(t)} size={104} level="M" />
           <div style={{ fontSize: 12, letterSpacing: 1, fontWeight: 700, textTransform: "uppercase", color: CO.color }}>{CO.label}</div>
           <div style={{ fontSize: 15, fontWeight: 700 }}>{t.region}{t.anio ? " " + t.anio : ""}</div>
-          <div><div style={{ fontSize: 11, color: "#888", letterSpacing: 3 }}>TOMO</div><div style={{ fontSize: 62, fontWeight: 800, lineHeight: 0.9, color: CO.color }}>{t.tomo}</div></div>
+          <div><div style={{ fontSize: 11, color: "#888", letterSpacing: 3 }}>TOMO</div><div style={{ fontSize: 56, fontWeight: 800, lineHeight: 0.9, color: CO.color }}>{t.tomo}</div></div>
           <div style={{ fontSize: 12, fontWeight: 600 }}>{rango(t)}</div>
           <div style={{ fontSize: 11, color: "#666" }}>{t.items} expediente(s)</div>
-          <QRCodeCanvas value={qrUrl(t)} size={104} level="M" />
         </div>
         <div style={{ padding: "8px 6px", textAlign: "center", borderTop: `2px solid ${CO.color}` }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: "#1A2238", letterSpacing: 0.5 }}>{codigo(t)}</div>
@@ -92,6 +92,10 @@ export default function Lomos() {
   return (
     <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
       <style jsx global>{`
+        .lomo-card, .lomo-card * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
         .print-only { display: none; }
         @media print {
           @page { size: A4 portrait; margin: 0; }
