@@ -37,7 +37,14 @@ function TomoView() {
   useEffect(() => {
     (async () => {
       const { data: s } = await supabase.auth.getSession();
-      if (!s.session) { setSesion(false); return; }
+      if (!s.session) {
+        setSesion(false);
+        // Redirige a login llevando el destino para volver aquí tras autenticarse
+        // (login/page.tsx aún debe leer el parámetro ?next para completar el retorno).
+        const next = window.location.pathname + window.location.search;
+        window.location.href = `/login?next=${encodeURIComponent(next)}`;
+        return;
+      }
       setSesion(true);
 
       let q = supabase.from("v_tomo_detalle").select("*").eq("tomo", tomo);
