@@ -3,7 +3,7 @@ import { COLOR } from "../lib/theme";
 const EMPRESAS = [
   { nombre: "Global Go", logo: "/global-go.png", color: "#1369B2",
     desc: "Garantías mobiliarias, saneamiento del archivo físico y lomos por tomo.",
-    activo: true, href: "https://archivo-gm.vercel.app/archivo_gm_app.html" },
+        activo: true, href: "/login" },
   { nombre: "Cooperativa Global Go", logo: "/cooperativa.png", color: "#0052FC",
     desc: "Garantías e inscripciones de la Cooperativa de Servicios Múltiples.",
     activo: false, href: "#" },
