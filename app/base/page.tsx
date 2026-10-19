@@ -68,6 +68,7 @@ export default function Base() {
 
   return (
     <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+            <Nav />
       <header style={{ background: COLOR.navy, color: "#fff", padding: "18px 28px" }}>
         <div style={{ fontSize: 20, fontWeight: 700 }}>Base de datos · Global Go</div>
         <div style={{ fontSize: 13, color: COLOR.navyText, marginTop: 2 }}>Explorador de registros</div>
