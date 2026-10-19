@@ -109,7 +109,7 @@ export default function Lomos() {
           .lomo-page:last-child { break-after: auto; page-break-after: auto; }
         }
       `}</style>
-
+      <div className="noprint"><Nav /></div>
       <header className="noprint" style={{ background: COLOR.navy, color: "#fff", padding: "18px 28px" }}>
         <div style={{ fontSize: 20, fontWeight: 700 }}>Lomos con QR</div>
         <div style={{ fontSize: 13, color: COLOR.navyText, marginTop: 2 }}>Generador de rótulos para los archivadores</div>
