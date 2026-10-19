@@ -89,8 +89,10 @@ export function parseSigm(buf: ArrayBuffer | Uint8Array): SigmParse {
       did = deudores[key].id;
     } else {
       did = crypto.randomUUID();
-      // Columna real = nombre_completo (no "nombre").
-      deudores[key] = { id: did, tipo_documento: td, numero_documento: nd, nombre_completo: clean(g(row, "Nombre completo del deudor")) };
+      // Columna real = nombre_completo (no "nombre"). Es NOT NULL: si el deudor
+      // viene sin nombre (garantía huérfana / identidad no resuelta), se marca
+      // con un placeholder visible en vez de null, para no abortar todo el lote.
+      deudores[key] = { id: did, tipo_documento: td, numero_documento: nd, nombre_completo: clean(g(row, "Nombre completo del deudor")) ?? "(SIN NOMBRE)" };
     }
     gmap[folio] = {
       deudor_id: did,
