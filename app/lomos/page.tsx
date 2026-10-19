@@ -70,10 +70,10 @@ export default function Lomos() {
           <img src={CO.logo} alt="" style={{ maxWidth: "94%", maxHeight: 90, objectFit: "contain" }} />
         </div>
         <div style={{ background: CO.color, color: "#fff", textAlign: "center", fontWeight: 800, letterSpacing: 5, fontSize: 17, padding: "8px 4px" }}>LEGAL</div>
-        <div style={{ display: "flex", justifyContent: "center", paddingTop: 14, paddingBottom: 4 }}>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <QRCodeCanvas value={qrUrl(t)} size={104} level="M" />
         </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: "4px 14px 14px", textAlign: "center" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: "0 14px 14px", textAlign: "center" }}>
           <div style={{ fontSize: 12, letterSpacing: 1, fontWeight: 700, textTransform: "uppercase", color: CO.color }}>{CO.label}</div>
           <div style={{ fontSize: 15, fontWeight: 700 }}>{t.region}{t.anio ? " " + t.anio : ""}</div>
           <div><div style={{ fontSize: 11, color: "#888", letterSpacing: 3 }}>TOMO</div><div style={{ fontSize: 56, fontWeight: 800, lineHeight: 0.9, color: CO.color }}>{t.tomo}</div></div>
