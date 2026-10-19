@@ -251,8 +251,9 @@ export default function CargasPage() {
         if (deudores[key]) { did = deudores[key].id; }
         else {
           did = crypto.randomUUID();
-          // CORRECCIÓN: la columna real es nombre_completo (no "nombre").
-          deudores[key] = { id: did, tipo_documento: td, numero_documento: nd, nombre_completo: clean(g(row, "Nombre completo del deudor")) };
+          // La columna real es nombre_completo (no "nombre") y es NOT NULL:
+          // si el deudor viene sin nombre, se marca con placeholder en vez de null.
+          deudores[key] = { id: did, tipo_documento: td, numero_documento: nd, nombre_completo: clean(g(row, "Nombre completo del deudor")) ?? "(SIN NOMBRE)" };
         }
         gmap[folio] = {
           deudor_id: did,
