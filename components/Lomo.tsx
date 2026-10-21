@@ -73,10 +73,15 @@ export function LomosImpresion({ lomos }: { lomos: LomoDatos[] }) {
         .print-only { display: none; }
         @media print {
           @page { size: A4 landscape; margin: 0; }
-          body { background: #fff; }
+          html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; min-height: 0 !important; height: auto !important; }
+          main { min-height: 0 !important; }
           .noprint { display: none !important; }
           .print-only { display: block; }
-          .lomo-page { box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; }
+          /* Hoja con holgura: 4 × 6.2 cm + espacios = 26.6 cm de ancho y 20.2 cm de alto,
+             para que entre en A4 (29.7 × 21) e incluso en carta (27.9 × 21.6) sin cortarse */
+          .lomo-page { width: 100% !important; height: auto !important; margin: 0 !important; padding: 4mm 0 0 !important;
+                       box-shadow: none !important; display: flex !important; justify-content: center; align-items: flex-start;
+                       break-inside: avoid; page-break-inside: avoid; break-after: page; page-break-after: always; overflow: hidden; }
           .lomo-page:last-child { break-after: auto; page-break-after: auto; }
         }
       `}</style>
@@ -93,4 +98,4 @@ export function LomosImpresion({ lomos }: { lomos: LomoDatos[] }) {
 
 export const hojasA4 = (n: number) => Math.ceil(n / LOMOS_POR_HOJA);
 
-const pageStyle: CSSProperties = { width: "297mm", height: "210mm", background: "#fff", margin: "0 auto 12mm", padding: "8mm", display: "flex", justifyContent: "center", gap: "5mm", boxSizing: "border-box", boxShadow: "0 1px 8px rgba(0,0,0,.15)" };
+const pageStyle: CSSProperties = { background: "#fff", display: "flex", justifyContent: "center", gap: "4mm", boxSizing: "border-box" };
