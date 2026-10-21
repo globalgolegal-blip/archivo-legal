@@ -17,6 +17,7 @@ const LINKS = [
   { href: "/lomos", label: "Lomos" },
   { href: "/cargas", label: "Cargas" },
   { href: "/cargos", label: "Préstamos" },
+  { href: "/gf", label: "Global Factoring" },
 ];
 
 export default function Nav() {
@@ -57,7 +58,7 @@ export default function Nav() {
 
       <div style={{ display: "flex", gap: 4, flex: 1 }}>
         {LINKS.map((l) => {
-          const activo = path === l.href;
+          const activo = l.href === "/gf" ? path.startsWith("/gf") : path === l.href;
           return (
             <a
               key={l.href}

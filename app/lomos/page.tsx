@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
-import { QRCodeCanvas } from "qrcode.react";
+import { LomoCard, LomosImpresion, hojasA4, type LomoDatos } from "../../components/Lomo";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
   import Nav from "../../components/Nav";
@@ -19,12 +19,6 @@ type Tomo = {
   src: string; region: string; anio: string | null; tomo: string;
   items: number; fecha_min: string | null; fecha_max: string | null;
 };
-
-function chunk<T>(arr: T[], n: number) {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
-  return out;
-}
 
 export default function Lomos() {
   const [emp, setEmp] = useState("globalgo");
@@ -64,29 +58,13 @@ export default function Lomos() {
     return u;
   }
 
-  function Card(t: Tomo) {
-    return (
-      <div className="lomo-card" style={{ height: "100%", border: `1.5px solid ${COLOR.border}`, borderRadius: 6, display: "flex", flexDirection: "column", overflow: "hidden", background: "#fff" }}>
-        <div style={{ padding: "18px 10px 14px", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 104, borderBottom: "1px solid #eee" }}>
-          <img src={CO.logo} alt="" style={{ maxWidth: "94%", maxHeight: 90, objectFit: "contain" }} />
-        </div>
-        <div style={{ background: CO.color, color: "#fff", textAlign: "center", fontWeight: 800, letterSpacing: 5, fontSize: 17, padding: "8px 4px" }}>LEGAL</div>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <QRCodeCanvas value={qrUrl(t)} size={104} level="M" />
-        </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: "0 14px 14px", textAlign: "center" }}>
-          <div style={{ fontSize: 12, letterSpacing: 1, fontWeight: 700, textTransform: "uppercase", color: CO.color }}>{CO.label}</div>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>{t.region}{t.anio ? " " + t.anio : ""}</div>
-          <div><div style={{ fontSize: 11, color: "#888", letterSpacing: 3 }}>TOMO</div><div style={{ fontSize: 56, fontWeight: 800, lineHeight: 0.9, color: CO.color }}>{t.tomo}</div></div>
-          <div style={{ fontSize: 12, fontWeight: 600 }}>{rango(t)}</div>
-          <div style={{ fontSize: 11, color: "#666" }}>{t.items} expediente(s)</div>
-        </div>
-        <div style={{ padding: "8px 6px", textAlign: "center", borderTop: `2px solid ${CO.color}` }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: "#1A2238", letterSpacing: 0.5 }}>{codigo(t)}</div>
-          <div style={{ fontSize: 9, color: "#888780", marginTop: 3 }}>Uso interno · Datos protegidos — Ley N° 29733</div>
-        </div>
-      </div>
-    );
+  // Formato común de lomos: components/Lomo.tsx (6.2 x 19.4 cm, 4 por hoja A4 horizontal)
+  function datos(t: Tomo, i: number): LomoDatos {
+    return {
+      key: String(i), logo: CO.logo, color: CO.color, empresa: CO.label,
+      sub: t.region + (t.anio ? " " + t.anio : ""), label: "TOMO", big: t.tomo,
+      extra: rango(t), nota: `${t.items} expediente(s)`, codigo: codigo(t), qr: qrUrl(t),
+    };
   }
 
   const seleccionados = tomos.map((t, i) => ({ t, i })).filter((x) => sel[x.i]);
@@ -94,21 +72,6 @@ export default function Lomos() {
 
   return (
     <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-      <style jsx global>{`
-        .lomo-card, .lomo-card * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        .print-only { display: none; }
-        @media print {
-          @page { size: A4 portrait; margin: 0; }
-          body { background: #fff; }
-          .noprint { display: none !important; }
-          .print-only { display: block; }
-          .lomo-page { box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; }
-          .lomo-page:last-child { break-after: auto; page-break-after: auto; }
-        }
-      `}</style>
       <div className="noprint"><Nav /></div>
       <header className="noprint" style={{ background: COLOR.navy, color: "#fff", padding: "18px 28px" }}>
         <div style={{ fontSize: 20, fontWeight: 700 }}>Lomos con QR</div>
@@ -125,26 +88,20 @@ export default function Lomos() {
           <button onClick={() => { const s: Record<number, boolean> = {}; tomos.forEach((_, i) => (s[i] = true)); setSel(s); }} style={btnGhost}>Seleccionar todos</button>
           <button onClick={() => setSel({})} style={btnGhost}>Ninguno</button>
           <button onClick={() => window.print()} style={btn}>Imprimir seleccionados</button>
-          <span style={{ fontSize: 13, color: COLOR.textSec }}>{msg || (tomos.length ? `${nSel} de ${tomos.length} · ${Math.ceil(nSel / 3) || 0} hoja(s) A4` : "")}</span>
+          <span style={{ fontSize: 13, color: COLOR.textSec }}>{msg || (tomos.length ? `${nSel} de ${tomos.length} · ${hojasA4(nSel)} hoja(s) A4` : "")}</span>
         </div>
       </section>
 
-      <div className="noprint" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, maxWidth: 1100, margin: "0 auto", padding: "0 20px 40px" }}>
+      <div className="noprint" style={{ display: "flex", flexWrap: "wrap", gap: 14, maxWidth: 1100, margin: "0 auto", padding: "0 20px 40px" }}>
         {tomos.map((t, i) => (
           <div key={i} style={{ position: "relative", opacity: sel[i] ? 1 : 0.45 }}>
-            {Card(t)}
+            <LomoCard {...datos(t, i)} key={String(i)} />
             <input type="checkbox" checked={!!sel[i]} onChange={(e) => setSel({ ...sel, [i]: e.target.checked })} style={{ position: "absolute", top: 8, right: 8, width: 22, height: 22, cursor: "pointer" }} />
           </div>
         ))}
       </div>
 
-      <div className="print-only">
-        {chunk(seleccionados, 3).map((grupo, pi) => (
-          <div key={pi} className="lomo-page" style={pageStyle}>
-            {grupo.map(({ t, i }) => (<div key={i} style={{ flex: "1 1 0", display: "flex" }}>{Card(t)}</div>))}
-          </div>
-        ))}
-      </div>
+      <LomosImpresion lomos={seleccionados.map(({ t, i }) => datos(t, i))} />
     </main>
   );
 }
@@ -152,4 +109,3 @@ export default function Lomos() {
 const inp: CSSProperties = { fontSize: 15, padding: "10px 12px", border: "1px solid #D3D1C7", borderRadius: 8, background: "#fff" };
 const btn: CSSProperties = { background: "#1A2238", color: "#fff", border: 0, borderRadius: 8, padding: "10px 16px", fontWeight: 600, fontSize: 14, cursor: "pointer" };
 const btnGhost: CSSProperties = { background: "#fff", border: "1px solid #D3D1C7", borderRadius: 8, padding: "9px 14px", fontSize: 14, cursor: "pointer" };
-const pageStyle: CSSProperties = { width: "210mm", minHeight: "297mm", background: "#fff", margin: "0 auto 12mm", padding: "8mm", display: "flex", gap: "4mm", boxShadow: "0 1px 8px rgba(0,0,0,.15)" };
