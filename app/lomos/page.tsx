@@ -6,13 +6,8 @@ import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
   import Nav from "../../components/Nav";
 
-type Empresa = { label: string; color: string; logo: string; pref: string };
-const EMPRESAS: Record<string, Empresa> = {
-  globalgo: { label: "Global Go", color: "#1369B2", logo: "/global-go.png", pref: "GG" },
-  factoring: { label: "Global Factoring", color: "#1070B7", logo: "/global-factoring.png", pref: "GFAC" },
-  funding: { label: "Global Funding", color: "#3AAA35", logo: "/global-funding.png", pref: "GFUN" },
-  coop: { label: "Cooperativa", color: "#0052FC", logo: "/cooperativa.png", pref: "COOP" },
-};
+// Lomos del archivo de Global Go (cada empresa genera sus lomos en su propio apartado).
+const CO = { label: "Global Go", color: "#1369B2", logo: "/global-go.png", pref: "GG" };
 const MES = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
 
 type Tomo = {
@@ -21,12 +16,10 @@ type Tomo = {
 };
 
 export default function Lomos() {
-  const [emp, setEmp] = useState("globalgo");
   const [tomos, setTomos] = useState<Tomo[]>([]);
   const [sel, setSel] = useState<Record<number, boolean>>({});
   const [msg, setMsg] = useState("");
 
-  const CO = EMPRESAS[emp];
 
   async function cargar() {
     setMsg("Cargando…");
@@ -80,10 +73,6 @@ export default function Lomos() {
 
       <section className="noprint" style={{ maxWidth: 1100, margin: "0 auto", padding: "20px" }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <label style={{ fontWeight: 600, fontSize: 14 }}>Empresa:</label>
-          <select value={emp} onChange={(e) => setEmp(e.target.value)} style={inp}>
-            {Object.keys(EMPRESAS).map((k) => (<option key={k} value={k}>{EMPRESAS[k].label}</option>))}
-          </select>
           <button onClick={cargar} style={btn}>Cargar tomos</button>
           <button onClick={() => { const s: Record<number, boolean> = {}; tomos.forEach((_, i) => (s[i] = true)); setSel(s); }} style={btnGhost}>Seleccionar todos</button>
           <button onClick={() => setSel({})} style={btnGhost}>Ninguno</button>
@@ -106,6 +95,5 @@ export default function Lomos() {
   );
 }
 
-const inp: CSSProperties = { fontSize: 15, padding: "10px 12px", border: "1px solid #D3D1C7", borderRadius: 8, background: "#fff" };
 const btn: CSSProperties = { background: "#1A2238", color: "#fff", border: 0, borderRadius: 8, padding: "10px 16px", fontWeight: 600, fontSize: 14, cursor: "pointer" };
 const btnGhost: CSSProperties = { background: "#fff", border: "1px solid #D3D1C7", borderRadius: 8, padding: "9px 14px", fontSize: 14, cursor: "pointer" };

@@ -8,8 +8,8 @@ const EMPRESAS = [
     desc: "Garantías e inscripciones de la Cooperativa de Servicios Múltiples.",
     activo: false, href: "#" },
   { nombre: "Global Factoring", logo: "/global-factoring.png", color: "#1070B7",
-    desc: "Contratos, letras y documentación de factoring.",
-    activo: false, href: "#" },
+    desc: "Contratos, pagarés, letras, procesos y transacciones de factoring.",
+    activo: true, href: "/gf" },
   { nombre: "Global Funding", logo: "/global-funding.png", color: "#3AAA35",
     desc: "Contratos y documentación de financiamiento.",
     activo: false, href: "#" },
@@ -35,8 +35,8 @@ export default function Home() {
 
       <section style={{ maxWidth: 980, margin: "0 auto", padding: "28px 20px" }}>
         <p style={{ fontSize: 15, color: COLOR.textSec, margin: "0 0 22px" }}>
-          Selecciona la empresa cuyo archivo quieres consultar. Hoy está habilitado el
-          archivo de Global Go; el resto se activará conforme se cargue su documentación.
+          Selecciona la empresa cuyo archivo quieres consultar. Hoy están habilitados
+          los archivos de Global Go y Global Factoring; el resto se activará conforme se cargue su documentación.
         </p>
 
         <div
