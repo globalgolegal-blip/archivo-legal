@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import GfHeader, { main, inp, btn, btnGhost, card } from "../../components/GfHeader";
-import { gf, normDoc, normFolder, fmt, useSesion, DOCS, type DocKey, type Contraparte } from "../../lib/gf";
+import { gf, normDoc, normFolder, fmt, useSesion, DOCS, type DocKey, type Contraparte, docTexto, completarDocumento, TIPOS_DOC } from "../../lib/gf";
 
 // Buscador de Global Factoring: por RUC/DNI, nombre o expediente.
 // Los QR de los lomos abren esta pantalla con ?exp=<expediente base> o ?folder=<tipo>|<folder>.
@@ -24,7 +24,7 @@ const SECCIONES: { k: DocKey | "proceso"; label: string }[] = [
   { k: "proceso", label: "Procesos" }, { k: "transaccion", label: "Transacciones" },
 ];
 const SEL = "*, contraparte:contraparte_id(tipo_documento, numero_documento, nombre)";
-const nombreCp = (r: Fila) => r.contraparte ? (r.contraparte.nombre || "") + " · " + r.contraparte.tipo_documento + " " + r.contraparte.numero_documento : "";
+const nombreCp = (r: Fila) => r.contraparte ? (r.contraparte.nombre || "") + " · " + docTexto(r.contraparte) : "";
 
 export default function GfBuscar() {
   const sesion = useSesion();
@@ -34,6 +34,9 @@ export default function GfBuscar() {
   const [datos, setDatos] = useState<Record<string, Fila[]>>({});
   const [vista, setVista] = useState<{ titulo: string; tabla: DocKey | "proceso"; filas: Fila[] } | null>(null);
   const [msg, setMsg] = useState("");
+  const [cTipo, setCTipo] = useState("RUC");
+  const [cNum, setCNum] = useState("");
+  const [cMsg, setCMsg] = useState("");
 
   useEffect(() => {
     if (!sesion) return;
@@ -66,8 +69,32 @@ export default function GfBuscar() {
     if (res.length === 1) abrir(res[0]);
   }
 
-  async function abrir(c: Resumen) {
+  async function pendientes() {
+    setSel(null); setVista(null); setMsg(""); setQ("");
+    const { data, error } = await gf().from("v_contraparte_resumen").select("*").eq("tipo_documento", "PENDIENTE").order("nombre").limit(1000);
+    if (error) { setMsg(error.message); return; }
+    setLista((data ?? []) as Resumen[]);
+    setMsg(data?.length ? `${data.length} contraparte(s) sin RUC/DNI.` : "Todas las contrapartes tienen RUC/DNI.");
+  }
+
+  async function guardarDocumento() {
+    if (!sel) return;
+    setCMsg("");
+    try {
+      const r = await completarDocumento(sel.id, cTipo, cNum);
+      const { data } = await gf().from("v_contraparte_resumen").select("*").eq("id", r.id).single();
+      setLista((l) => l.filter((x) => x.id !== sel.id));
+      setCNum("");
+      setCMsg(r.fusion ? "Ese documento ya estaba registrado: se unieron ambas fichas." : "Documento guardado.");
+      if (data) abrir(data as Resumen, false);
+    } catch (e) {
+      setCMsg((e as Error).message);
+    }
+  }
+
+  async function abrir(c: Resumen, limpiar = true) {
     setSel(c); setVista(null);
+    if (limpiar) setCMsg("");
     const out: Record<string, Fila[]> = {};
     await Promise.all(SECCIONES.map(async (s) => {
       const { data } = await gf().from(s.k).select("*").eq("contraparte_id", c.id).order("creado_en");
@@ -93,7 +120,8 @@ export default function GfBuscar() {
   async function actualizar(tabla: string, id: string, cambio: Fila) {
     const { error } = await gf().from(tabla).update(cambio).eq("id", id);
     if (error) { alert(error.message); return; }
-    if (sel) abrir(sel);
+    if (sel) abrir(sel, false);
+    else if (vista) setVista({ ...vista, filas: vista.filas.map((f) => (f.id === id ? { ...f, ...cambio } : f)) });
   }
 
   async function eliminar(tabla: string, id: string) {
@@ -126,6 +154,10 @@ export default function GfBuscar() {
                     <select value={r.estado_firma} onChange={(e) => actualizar("contrato", r.id, { estado_firma: e.target.value })} style={mini}>
                       {["SIN REVISAR", "COMPLETO", "FALTA LIZ", "FALTA JC", "ADENDA"].map((x) => <option key={x}>{x}</option>)}
                     </select>
+                  ) : c.k === "folder" ? (
+                    <input defaultValue={r.folder ? r.folder.replace(/^FOLDER\s*/, "") : ""} placeholder="—" title="Escribe el n° de folder y sal del campo para guardar"
+                      onBlur={(e) => { const v = normFolder(e.target.value); if (v !== (r.folder ?? null)) actualizar(tabla, r.id, { folder: v }); }}
+                      style={{ ...mini, width: 64 }} />
                   ) : (c.f ? c.f(r) : r[c.k] ?? "—")}
                 </td>
               ))}
@@ -146,6 +178,7 @@ export default function GfBuscar() {
         <div style={{ display: "flex", gap: 10 }}>
           <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && buscar()} placeholder="20614114071, Yoshival, 03204-2025…" style={inp} />
           <button onClick={() => buscar()} style={btn}>Buscar</button>
+          <button onClick={pendientes} style={{ ...btnGhost, whiteSpace: "nowrap" }}>Sin RUC/DNI</button>
         </div>
         {msg && <div style={{ fontSize: 14, color: "#5F5E5A" }}>{msg}</div>}
 
@@ -160,7 +193,7 @@ export default function GfBuscar() {
           <div style={card}>
             {lista.map((c) => (
               <button key={c.id} onClick={() => abrir(c)} style={{ display: "flex", width: "100%", justifyContent: "space-between", gap: 12, padding: "10px 4px", background: "none", border: 0, borderBottom: "1px solid #eee", cursor: "pointer", textAlign: "left", fontSize: 14 }}>
-                <span><b>{c.nombre || "(sin nombre)"}</b> · {c.tipo_documento} {c.numero_documento}</span>
+                <span><b>{c.nombre || "(sin nombre)"}</b> · <span style={{ color: c.tipo_documento === "PENDIENTE" ? "#B26A00" : undefined }}>{docTexto(c)}</span></span>
                 <span style={{ color: "#5F5E5A", fontSize: 13 }}>{c.contratos} contr. · {c.pagares} pag. · {c.letras} let. · {c.procesos} proc. · {c.transacciones} trx.</span>
               </button>
             ))}
@@ -171,7 +204,17 @@ export default function GfBuscar() {
           <div style={{ ...card, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 18, fontWeight: 700 }}>{sel.nombre || "(sin nombre)"}</div>
-              <div style={{ fontSize: 14, color: "#5F5E5A" }}>{sel.tipo_documento} {sel.numero_documento}</div>
+              <div style={{ fontSize: 14, color: sel.tipo_documento === "PENDIENTE" ? "#B26A00" : "#5F5E5A" }}>{docTexto(sel)}</div>
+              {sel.tipo_documento === "PENDIENTE" && (
+                <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <select value={cTipo} onChange={(e) => setCTipo(e.target.value)} style={{ ...inp, width: "auto" }}>
+                    {TIPOS_DOC.map((t) => <option key={t}>{t}</option>)}
+                  </select>
+                  <input value={cNum} onChange={(e) => setCNum(e.target.value)} onKeyDown={(e) => e.key === "Enter" && guardarDocumento()} placeholder="N° de documento" inputMode="numeric" style={{ ...inp, width: 180 }} />
+                  <button onClick={guardarDocumento} style={btn}>Guardar documento</button>
+                </div>
+              )}
+              {cMsg && <div style={{ fontSize: 13, marginTop: 6, color: /guardado|unieron/.test(cMsg) ? "#1E7B34" : "#C0392B" }}>{cMsg}</div>}
             </div>
             {lista.length > 1 && <button onClick={() => setSel(null)} style={btnGhost}>← Volver a resultados</button>}
           </div>

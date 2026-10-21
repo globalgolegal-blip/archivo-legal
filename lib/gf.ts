@@ -11,7 +11,11 @@ export const GF = { label: "Global Factoring", color: "#1070B7", logo: "/global-
 
 export const TIPOS_DOC = ["RUC", "DNI", "CE", "PASAPORTE"] as const;
 
-export type Contraparte = { id: string; tipo_documento: string; numero_documento: string; nombre: string | null };
+export type Contraparte = { id: string; tipo_documento: string; numero_documento: string | null; nombre: string | null };
+
+/** Las contrapartes importadas del Sheets entran con documento PENDIENTE hasta completar su RUC/DNI. */
+export const docTexto = (c: { tipo_documento: string; numero_documento: string | null }) =>
+  c.tipo_documento === "PENDIENTE" ? "RUC/DNI pendiente" : `${c.tipo_documento} ${c.numero_documento}`;
 
 // --- Documentos -------------------------------------------------------------
 export const normDoc = (s: string) => s.replace(/[\s.-]+/g, "").toUpperCase();
@@ -49,10 +53,51 @@ export async function obtenerContraparte(tipo: string, num: string, nombre: stri
     if (!ex.nombre && nom) await gf().from("contraparte").update({ nombre: nom }).eq("id", ex.id);
     return { ...ex, nombre: ex.nombre || nom };
   }
+  // Si ya existe con el mismo nombre y documento pendiente (importada del Sheets), se completa esa
+  if (nom) {
+    const { data: pend } = await gf().from("contraparte").select("*")
+      .eq("tipo_documento", "PENDIENTE").eq("nombre", nom).limit(1).maybeSingle();
+    if (pend) {
+      const { data, error } = await gf().from("contraparte")
+        .update({ tipo_documento: tipo, numero_documento: n }).eq("id", pend.id).select("*").single();
+      if (error) throw new Error(error.message);
+      return data as Contraparte;
+    }
+  }
   const { data, error } = await gf().from("contraparte")
     .insert({ tipo_documento: tipo, numero_documento: n, nombre: nom }).select("*").single();
   if (error) throw new Error(error.message);
   return data as Contraparte;
+}
+
+const TABLAS_GF = ["contrato", "pagare", "letra", "proceso", "transaccion"];
+
+/**
+ * Completa el RUC/DNI de una contraparte pendiente. Si ese documento ya pertenece a otra
+ * contraparte (el mismo cliente escrito distinto en el Sheets), pasa todos sus documentos
+ * a esa y elimina la pendiente. Devuelve el id de la contraparte que queda.
+ */
+export async function completarDocumento(id: string, tipo: string, num: string): Promise<{ id: string; fusion: boolean }> {
+  const n = normDoc(num);
+  const err = errorDocumento(tipo, n);
+  if (err) throw new Error(err);
+  const { data: ex, error: e1 } = await gf().from("contraparte").select("id, nombre")
+    .eq("tipo_documento", tipo).eq("numero_documento", n).maybeSingle();
+  if (e1) throw new Error(e1.message);
+  if (ex && ex.id !== id) {
+    for (const t of TABLAS_GF) {
+      const { error } = await gf().from(t).update({ contraparte_id: ex.id }).eq("contraparte_id", id);
+      if (error) throw new Error(error.message);
+    }
+    const { data: yo } = await gf().from("contraparte").select("nombre").eq("id", id).maybeSingle();
+    if (!ex.nombre && yo?.nombre) await gf().from("contraparte").update({ nombre: yo.nombre }).eq("id", ex.id);
+    const { error } = await gf().from("contraparte").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    return { id: ex.id, fusion: true };
+  }
+  const { error } = await gf().from("contraparte").update({ tipo_documento: tipo, numero_documento: n }).eq("id", id);
+  if (error) throw new Error(error.message);
+  return { id, fusion: false };
 }
 
 // --- Folders ----------------------------------------------------------------
