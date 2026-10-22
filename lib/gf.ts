@@ -102,6 +102,27 @@ export async function completarDocumento(id: string, tipo: string, num: string):
   return { id, fusion: false };
 }
 
+// --- Búsqueda flexible --------------------------------------------------------
+/** Igual que la columna "clave" de la base: sin tildes, puntos ni símbolos, en mayúsculas. */
+export const claveBusqueda = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+
+/**
+ * Aplica la búsqueda flexible a una consulta: si se escriben números, busca dentro del RUC/DNI;
+ * si se escriben palabras, cada palabra debe aparecer en el nombre, en cualquier orden
+ * ("setell tele" encuentra "TELECOMUNICACIONES SETELL E.I.R.L"). `pref` permite filtrar
+ * por la contraparte vinculada (ej. "contraparte.").
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- sirve para cualquier consulta de supabase
+export function filtroContraparte<Q extends { ilike: (c: string, p: string) => any }>(q: Q, texto: string, pref = ""): Q {
+  const t = texto.trim();
+  const dig = t.replace(/\D/g, "");
+  if (dig.length >= 3 && dig.length === t.replace(/[^0-9A-Za-z]/g, "").length) return q.ilike(pref + "numero_documento", `%${dig}%`) as Q;
+  let r = q;
+  for (const w of claveBusqueda(t).split(" ").filter(Boolean)) r = r.ilike(pref + "clave", `%${w}%`) as Q;
+  return r;
+}
+
 // --- Folders ----------------------------------------------------------------
 /** "6", "folder 6 ", "F6" -> "FOLDER 6". Texto libre se guarda en mayúsculas. */
 export function normFolder(s: string): string | null {

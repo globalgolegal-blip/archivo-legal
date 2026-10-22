@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import GfHeader, { main, inp, btn, btnGhost, card } from "../../components/GfHeader";
-import { gf, normDoc, normFolder, fmt, useSesion, DOCS, type DocKey, type Contraparte, docTexto, completarDocumento, TIPOS_DOC } from "../../lib/gf";
+import { gf, normDoc, normFolder, fmt, useSesion, DOCS, type DocKey, type Contraparte, docTexto, completarDocumento, TIPOS_DOC, filtroContraparte } from "../../lib/gf";
 
 // Buscador de Global Factoring: por RUC/DNI, nombre o expediente.
 // Los QR de los lomos abren esta pantalla con ?exp=<expediente base> o ?folder=<tipo>|<folder>.
@@ -34,6 +34,7 @@ export default function GfBuscar() {
   const [datos, setDatos] = useState<Record<string, Fila[]>>({});
   const [vista, setVista] = useState<{ titulo: string; tabla: DocKey | "proceso"; filas: Fila[] } | null>(null);
   const [msg, setMsg] = useState("");
+  const [sug, setSug] = useState<Resumen[]>([]);
   const [cTipo, setCTipo] = useState("RUC");
   const [cNum, setCNum] = useState("");
   const [cMsg, setCMsg] = useState("");
@@ -51,11 +52,11 @@ export default function GfBuscar() {
     const t = texto.trim();
     setSel(null); setVista(null); setMsg("");
     if (!t) return;
-    const like = `%${t.replace(/[%,()]/g, " ")}%`;
-    const doc = normDoc(t);
+    setSug([]);
+    const like = `%${normDoc(t).replace(/[%,()]/g, "")}%`;
     const [r1, r2] = await Promise.all([
-      gf().from("v_contraparte_resumen").select("*").or(`numero_documento.ilike.%${doc}%,nombre.ilike.${like}`).limit(50),
-      gf().from("proceso").select("contraparte_id").ilike("expediente", like).limit(50),
+      filtroContraparte(gf().from("v_contraparte_resumen").select("*"), t).order("nombre").limit(100),
+      /\d/.test(t) ? gf().from("proceso").select("contraparte_id").ilike("expediente", like).limit(50) : Promise.resolve({ data: [] as Fila[] }),
     ]);
     if (r1.error) { setMsg(r1.error.message); return; }
     let res = (r1.data ?? []) as Resumen[];
@@ -68,6 +69,19 @@ export default function GfBuscar() {
     if (!res.length) setMsg("Sin resultados. Si es una contraparte nueva, regístrala en la pestaña Registrar.");
     if (res.length === 1) abrir(res[0]);
   }
+
+  // Sugerencias mientras se escribe (desde 2 caracteres)
+  useEffect(() => {
+    if (!sesion) return;
+    const t = q.trim();
+    if (t.length < 2 || (sel && (sel.nombre === t))) { setSug([]); return; }
+    const h = setTimeout(async () => {
+      const { data } = await filtroContraparte(gf().from("v_contraparte_resumen").select("*"), t).order("nombre").limit(8);
+      setSug((data ?? []) as Resumen[]);
+    }, 250);
+    return () => clearTimeout(h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, sesion]);
 
   async function pendientes() {
     setSel(null); setVista(null); setMsg(""); setQ("");
@@ -176,7 +190,21 @@ export default function GfBuscar() {
       <GfHeader titulo="Global Factoring · Archivo" sub="Busca por RUC/DNI, nombre o n° de expediente" />
       <section style={{ maxWidth: 1100, margin: "0 auto", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", gap: 10 }}>
-          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && buscar()} placeholder="20614114071, Yoshival, 03204-2025…" style={inp} />
+          <div style={{ position: "relative", flex: 1 }}>
+            <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") buscar(); if (e.key === "Escape") setSug([]); }}
+              onBlur={() => setTimeout(() => setSug([]), 200)} placeholder="Parte del nombre, RUC/DNI o expediente: setell, 20614, 03204…" style={inp} />
+            {sug.length > 0 && (
+              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, marginTop: 4, background: "#fff", border: "1px solid #D3D1C7", borderRadius: 10, boxShadow: "0 6px 18px rgba(0,0,0,.12)", overflow: "hidden" }}>
+                {sug.map((c) => (
+                  <button key={c.id} onMouseDown={(e) => e.preventDefault()} onClick={() => { setSug([]); setQ(c.nombre || ""); setLista([c]); abrir(c); }}
+                    style={{ display: "flex", justifyContent: "space-between", gap: 10, width: "100%", padding: "9px 12px", background: "none", border: 0, borderBottom: "1px solid #eee", cursor: "pointer", textAlign: "left", fontSize: 14 }}>
+                    <span><b>{c.nombre || "(sin nombre)"}</b></span>
+                    <span style={{ fontSize: 12, color: c.tipo_documento === "PENDIENTE" ? "#B26A00" : "#5F5E5A", whiteSpace: "nowrap" }}>{docTexto(c)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button onClick={() => buscar()} style={btn}>Buscar</button>
           <button onClick={pendientes} style={{ ...btnGhost, whiteSpace: "nowrap" }}>Sin RUC/DNI</button>
         </div>

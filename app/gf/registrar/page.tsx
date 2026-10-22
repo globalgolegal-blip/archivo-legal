@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import GfHeader, { main, inp, btn, card, lbl } from "../../../components/GfHeader";
-import { gf, TIPOS_DOC, normDoc, errorDocumento, obtenerContraparte, normFolder, ROLES, useSesion } from "../../../lib/gf";
+import { gf, TIPOS_DOC, normDoc, errorDocumento, obtenerContraparte, normFolder, ROLES, useSesion, filtroContraparte, docTexto, type Contraparte } from "../../../lib/gf";
 
 // Registro de contratos, pagarés, letras, procesos y transacciones.
 // Todo registro se amarra a una contraparte identificada por RUC/DNI.
@@ -37,6 +37,25 @@ export default function Registrar() {
   const [f, setF] = useState<Record<string, string>>({ ...VACIO });
   const [msg, setMsg] = useState<{ k: "" | "ok" | "err"; t: string }>({ k: "", t: "" });
   const [busy, setBusy] = useState(false);
+
+  const [sug, setSug] = useState<Contraparte[]>([]);
+  const [elegido, setElegido] = useState("");
+
+  // Sugerencias de contrapartes ya registradas mientras se escribe el nombre (evita duplicados)
+  useEffect(() => {
+    const t = nombre.trim();
+    if (t.length < 3 || t === elegido) { setSug([]); return; }
+    const h = setTimeout(async () => {
+      const { data } = await filtroContraparte(gf().from("contraparte").select("id, tipo_documento, numero_documento, nombre"), t).order("nombre").limit(6);
+      setSug((data ?? []) as Contraparte[]);
+    }, 250);
+    return () => clearTimeout(h);
+  }, [nombre, elegido]);
+
+  function elegir(c: Contraparte) {
+    setSug([]); setElegido(c.nombre || ""); setNombre(c.nombre || "");
+    if (c.tipo_documento !== "PENDIENTE" && c.numero_documento) { setTdoc(c.tipo_documento); setNdoc(c.numero_documento); setExiste(true); }
+  }
 
   const set = (k: string) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
   const docErr = ndoc ? errorDocumento(tdoc, normDoc(ndoc)) : "";
@@ -108,7 +127,20 @@ export default function Registrar() {
               <input value={ndoc} onChange={(e) => { setNdoc(e.target.value); setExiste(null); }} onBlur={buscarContraparte} inputMode="numeric" style={{ ...inp, borderColor: docErr ? "#C0392B" : "#D3D1C7" }} />
             </Campo>
             <Campo label="Nombre o razón social (opcional)">
-              <input value={nombre} onChange={(e) => setNombre(e.target.value)} style={inp} />
+              <div style={{ position: "relative" }}>
+                <input value={nombre} onChange={(e) => setNombre(e.target.value)} onBlur={() => setTimeout(() => setSug([]), 200)} placeholder="Escribe parte del nombre…" style={inp} />
+                {sug.length > 0 && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, marginTop: 4, background: "#fff", border: "1px solid #D3D1C7", borderRadius: 10, boxShadow: "0 6px 18px rgba(0,0,0,.12)", overflow: "hidden" }}>
+                    <div style={{ fontSize: 11, color: "#888780", padding: "6px 10px 2px" }}>Ya registradas:</div>
+                    {sug.map((c) => (
+                      <button key={c.id} onMouseDown={(e) => e.preventDefault()} onClick={() => elegir(c)}
+                        style={{ display: "block", width: "100%", padding: "7px 10px", background: "none", border: 0, borderBottom: "1px solid #eee", cursor: "pointer", textAlign: "left", fontSize: 13 }}>
+                        <b>{c.nombre}</b> <span style={{ color: c.tipo_documento === "PENDIENTE" ? "#B26A00" : "#5F5E5A" }}>· {docTexto(c)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Campo>
           </div>
           <div style={{ fontSize: 13, marginTop: 8, color: docErr ? "#C0392B" : "#5F5E5A" }}>

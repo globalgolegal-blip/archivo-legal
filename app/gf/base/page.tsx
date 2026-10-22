@@ -3,7 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import GfHeader, { main, inp, btn, btnGhost } from "../../../components/GfHeader";
 import { COLOR } from "../../../lib/theme";
-import { gf, fmt, useSesion, normFolder, docTexto } from "../../../lib/gf";
+import { gf, fmt, useSesion, normFolder, docTexto, filtroContraparte } from "../../../lib/gf";
 
 // Base de Global Factoring: explorador de registros por tipo de documento,
 // con búsqueda por contraparte (nombre o RUC/DNI), filtro por folder y paginación.
@@ -51,10 +51,7 @@ export default function GfBase() {
         .select("*, contraparte:contraparte_id!inner(tipo_documento, numero_documento, nombre)", { count: "exact" });
       if (sinFolder) query = query.is("folder", null);
       else if (folder.trim()) query = query.eq("folder", normFolder(folder));
-      if (q.trim()) {
-        const t = q.trim().replace(/[%,()]/g, " ");
-        query = query.or(`nombre.ilike.%${t}%,numero_documento.ilike.%${t.replace(/\s+/g, "")}%`, { referencedTable: "contraparte" });
-      }
+      if (q.trim()) query = filtroContraparte(query, q, "contraparte.");
       const from = page * PAGE;
       const { data, error, count } = await query.order(TIPOS[tipo].orden, { nullsFirst: false }).range(from, from + PAGE - 1);
       if (error) { setEstado(error.message); return; }
