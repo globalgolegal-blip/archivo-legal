@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import GfHeader, { main, inp, btn, btnGhost, card } from "../../components/GfHeader";
+import ConsultaPin, { type DestinoQR } from "../../components/ConsultaPin";
+import { useRol, puedeEditar, esAdmin } from "../../lib/rol";
 import { gf, normDoc, normFolder, fmt, useSesion, DOCS, type DocKey, type Contraparte, docTexto, completarDocumento, TIPOS_DOC, filtroContraparte } from "../../lib/gf";
 
 // Buscador de Global Factoring: por RUC/DNI, nombre o expediente.
@@ -26,8 +28,22 @@ const SECCIONES: { k: DocKey | "proceso"; label: string }[] = [
 const SEL = "*, contraparte:contraparte_id(tipo_documento, numero_documento, nombre)";
 const nombreCp = (r: Fila) => r.contraparte ? (r.contraparte.nombre || "") + " · " + docTexto(r.contraparte) : "";
 
+// Destino del QR del lomo (?exp=… o ?folder=tipo|folder), para la consulta con PIN
+function destinoQR(): DestinoQR | null {
+  if (typeof window === "undefined") return null;
+  const p = new URLSearchParams(window.location.search);
+  if (p.get("exp")) return { tipo: "gf_exp", base: p.get("exp")! };
+  const f = p.get("folder");
+  if (f && f.includes("|")) { const [doc, folder] = f.split("|"); return { tipo: "gf_folder", doc, folder }; }
+  return null;
+}
+
 export default function GfBuscar() {
-  const sesion = useSesion();
+  const [qr] = useState<DestinoQR | null>(destinoQR);
+  const sesion = useSesion(!qr);
+  const rol = useRol();
+  const editor = puedeEditar(rol);
+  const admin = esAdmin(rol);
   const [q, setQ] = useState("");
   const [lista, setLista] = useState<Resumen[]>([]);
   const [sel, setSel] = useState<Resumen | null>(null);
@@ -35,6 +51,7 @@ export default function GfBuscar() {
   const [vista, setVista] = useState<{ titulo: string; tabla: DocKey | "proceso"; filas: Fila[] } | null>(null);
   const [msg, setMsg] = useState("");
   const [sug, setSug] = useState<Resumen[]>([]);
+  const sinSug = useRef(false); // tras presionar Buscar no se muestran sugerencias hasta volver a escribir
   const [cTipo, setCTipo] = useState("RUC");
   const [cNum, setCNum] = useState("");
   const [cMsg, setCMsg] = useState("");
@@ -52,7 +69,7 @@ export default function GfBuscar() {
     const t = texto.trim();
     setSel(null); setVista(null); setMsg("");
     if (!t) return;
-    setSug([]);
+    setSug([]); sinSug.current = true;
     const like = `%${normDoc(t).replace(/[%,()]/g, "")}%`;
     const [r1, r2] = await Promise.all([
       filtroContraparte(gf().from("v_contraparte_resumen").select("*"), t).order("nombre").limit(100),
@@ -76,8 +93,9 @@ export default function GfBuscar() {
     const t = q.trim();
     if (t.length < 2 || (sel && (sel.nombre === t))) { setSug([]); return; }
     const h = setTimeout(async () => {
+      if (sinSug.current) return;
       const { data } = await filtroContraparte(gf().from("v_contraparte_resumen").select("*"), t).order("nombre").limit(8);
-      setSug((data ?? []) as Resumen[]);
+      if (!sinSug.current) setSug((data ?? []) as Resumen[]);
     }, 250);
     return () => clearTimeout(h);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,7 +178,9 @@ export default function GfBuscar() {
               {conCp && <td style={td}>{nombreCp(r)}</td>}
               {cols.map((c) => (
                 <td key={c.k} style={td}>
-                  {tabla === "contrato" && c.k === "tipo" ? (
+                  {!editor && (c.k === "tipo" || c.k === "estado_firma" || c.k === "folder") ? (
+                    (c.f ? c.f(r) : r[c.k] ?? "—")
+                  ) : tabla === "contrato" && c.k === "tipo" ? (
                     <select value={r.tipo ?? ""} onChange={(e) => actualizar("contrato", r.id, { tipo: e.target.value || null })} style={mini}>
                       <option value="">Sin tipo</option><option>FACTORING</option><option>CONFIRMING</option>
                     </select>
@@ -175,7 +195,7 @@ export default function GfBuscar() {
                   ) : (c.f ? c.f(r) : r[c.k] ?? "—")}
                 </td>
               ))}
-              <td style={td}><button onClick={() => eliminar(tabla, r.id)} style={{ ...btnGhost, padding: "4px 8px", fontSize: 12, color: "#C0392B" }}>Eliminar</button></td>
+              <td style={td}>{admin && <button onClick={() => eliminar(tabla, r.id)} style={{ ...btnGhost, padding: "4px 8px", fontSize: 12, color: "#C0392B" }}>Eliminar</button>}</td>
             </tr>
           ))}</tbody>
         </table>
@@ -183,6 +203,21 @@ export default function GfBuscar() {
     );
   }
 
+  if (sesion === false && qr) {
+    return (
+      <main style={main}>
+        <header style={{ background: "#1A2238", color: "#fff", padding: "18px 24px", display: "flex", alignItems: "center", gap: 12 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/global-factoring.png" alt="" style={{ height: 34, background: "#fff", borderRadius: 6, padding: 3 }} />
+          <div><div style={{ fontSize: 12, letterSpacing: 2, color: "#9AA5C4", textTransform: "uppercase" }}>Archivo Legal · Consulta</div>
+            <div style={{ fontSize: 20, fontWeight: 700 }}>Global Factoring</div></div>
+        </header>
+        <section style={{ maxWidth: 900, margin: "0 auto", padding: 20 }}>
+          <ConsultaPin destino={qr} volver={window.location.pathname + window.location.search} />
+        </section>
+      </main>
+    );
+  }
   if (!sesion) return <main style={main} />;
 
   return (
@@ -191,7 +226,7 @@ export default function GfBuscar() {
       <section style={{ maxWidth: 1100, margin: "0 auto", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ position: "relative", flex: 1 }}>
-            <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") buscar(); if (e.key === "Escape") setSug([]); }}
+            <input value={q} onChange={(e) => { sinSug.current = false; setQ(e.target.value); }} onKeyDown={(e) => { if (e.key === "Enter") buscar(); if (e.key === "Escape") setSug([]); }}
               onBlur={() => setTimeout(() => setSug([]), 200)} placeholder="Parte del nombre, RUC/DNI o expediente: setell, 20614, 03204…" style={inp} />
             {sug.length > 0 && (
               <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20, marginTop: 4, background: "#fff", border: "1px solid #D3D1C7", borderRadius: 10, boxShadow: "0 6px 18px rgba(0,0,0,.12)", overflow: "hidden" }}>
@@ -233,7 +268,7 @@ export default function GfBuscar() {
             <div>
               <div style={{ fontSize: 18, fontWeight: 700 }}>{sel.nombre || "(sin nombre)"}</div>
               <div style={{ fontSize: 14, color: sel.tipo_documento === "PENDIENTE" ? "#B26A00" : "#5F5E5A" }}>{docTexto(sel)}</div>
-              {sel.tipo_documento === "PENDIENTE" && (
+              {sel.tipo_documento === "PENDIENTE" && editor && (
                 <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
                   <select value={cTipo} onChange={(e) => setCTipo(e.target.value)} style={{ ...inp, width: "auto" }}>
                     {TIPOS_DOC.map((t) => <option key={t}>{t}</option>)}

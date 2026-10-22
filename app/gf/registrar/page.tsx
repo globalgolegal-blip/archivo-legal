@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import GfHeader, { main, inp, btn, card, lbl } from "../../../components/GfHeader";
+import { useRol, puedeEditar } from "../../../lib/rol";
 import { gf, TIPOS_DOC, normDoc, errorDocumento, obtenerContraparte, normFolder, ROLES, useSesion, filtroContraparte, docTexto, type Contraparte } from "../../../lib/gf";
 
 // Registro de contratos, pagarés, letras, procesos y transacciones.
@@ -29,6 +30,7 @@ function Campo({ label, children, ancho = 1 }: { label: string; children: ReactN
 
 export default function Registrar() {
   const sesion = useSesion();
+  const rol = useRol();
   const [tab, setTab] = useState<Tipo>("contrato");
   const [tdoc, setTdoc] = useState("RUC");
   const [ndoc, setNdoc] = useState("");
@@ -98,7 +100,17 @@ export default function Registrar() {
     }
   }
 
-  if (!sesion) return <main style={main} />;
+  if (!sesion || rol === undefined) return <main style={main} />;
+  if (!puedeEditar(rol)) {
+    return (
+      <main style={main}>
+        <GfHeader titulo="Global Factoring · Registrar" sub="Contratos, pagarés, letras, procesos y transacciones" />
+        <section style={{ maxWidth: 700, margin: "0 auto", padding: 24 }}>
+          <div style={card}>Tu perfil es de solo lectura: no puedes registrar documentos. Si necesitas hacerlo, pide el perfil de Editor a un administrador.</div>
+        </section>
+      </main>
+    );
+  }
 
   const g3 = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 } as const;
 

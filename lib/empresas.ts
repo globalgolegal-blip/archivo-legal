@@ -5,7 +5,7 @@
 //  logo, sus colores (franja, pestaña activa, lomos) y sus pestañas.
 // ============================================================================
 
-export type EmpresaKey = "globalgo" | "factoring" | "funding" | "cooperativa";
+export type EmpresaKey = "globalgo" | "factoring" | "funding" | "cooperativa" | "admin";
 
 export type Empresa = {
   nombre: string;
@@ -13,7 +13,7 @@ export type Empresa = {
   primario: string; // color principal del logo
   acento: string;   // segundo color del logo
   pref: string;     // prefijo de los códigos de lomo
-  tabs: { href: string; label: string }[];
+  tabs: { href: string; label: string; min?: "editor" | "admin" }[];  // min = perfil mínimo para ver la pestaña
   salir: string;    // a dónde va al cerrar sesión
 };
 
@@ -24,7 +24,7 @@ export const EMPRESAS: Record<EmpresaKey, Empresa> = {
       { href: "/panel", label: "Panel" },
       { href: "/base", label: "Base" },
       { href: "/lomos", label: "Lomos" },
-      { href: "/cargas", label: "Cargas" },
+      { href: "/cargas", label: "Cargas", min: "admin" },
       { href: "/cargos", label: "Préstamos" },
     ],
     salir: "/login",
@@ -34,11 +34,21 @@ export const EMPRESAS: Record<EmpresaKey, Empresa> = {
     tabs: [
       { href: "/gf", label: "Buscar" },
       { href: "/gf/base", label: "Base" },
-      { href: "/gf/registrar", label: "Registrar" },
+      { href: "/gf/registrar", label: "Registrar", min: "editor" },
       { href: "/gf/lomos", label: "Lomos" },
     ],
     salir: "/",
   },
   funding: { nombre: "Global Funding", logo: "/global-funding.png", primario: "#3CAA39", acento: "#148F36", pref: "GFUN", tabs: [], salir: "/" },
   cooperativa: { nombre: "Cooperativa Global Go", logo: "/cooperativa.png", primario: "#0357FA", acento: "#F90505", pref: "COOP", tabs: [], salir: "/" },
+  // Administración del archivo (común a todas las empresas; solo administradores)
+  admin: {
+    nombre: "Administración", logo: "", primario: "#4A5A8C", acento: "#9AA5C4", pref: "",
+    tabs: [
+      { href: "/admin", label: "Usuarios", min: "admin" },
+      { href: "/admin/auditoria", label: "Auditoría", min: "admin" },
+      { href: "/admin/pin", label: "PIN de consulta", min: "admin" },
+    ],
+    salir: "/",
+  },
 };

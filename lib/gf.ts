@@ -189,16 +189,17 @@ export function fmt(d: string | null) {
 
 // --- Sesión -----------------------------------------------------------------
 /** Igual que las demás pantallas: sin sesión, redirige al login y vuelve aquí. */
-export function useSesion() {
+export function useSesion(redirigir = true) {
   const [ok, setOk] = useState<boolean | null>(null);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      if (!data.session && !redirigir) { setOk(false); return; }
       if (!data.session) {
         const next = window.location.pathname + window.location.search;
         window.location.href = `/login?next=${encodeURIComponent(next)}`;
         setOk(false);
       } else setOk(true);
     });
-  }, []);
+  }, [redirigir]);
   return ok;
 }

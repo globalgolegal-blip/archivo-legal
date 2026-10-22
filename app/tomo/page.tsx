@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
+import ConsultaPin from "../../components/ConsultaPin";
 
 type Fila = {
   src: string;
@@ -38,11 +39,8 @@ function TomoView() {
     (async () => {
       const { data: s } = await supabase.auth.getSession();
       if (!s.session) {
+        // Sin sesión: se ofrece consultar con el PIN de Legal o ingresar con cuenta
         setSesion(false);
-        // Redirige a login llevando el destino para volver aquí tras autenticarse
-        // (login/page.tsx aún debe leer el parámetro ?next para completar el retorno).
-        const next = window.location.pathname + window.location.search;
-        window.location.href = `/login?next=${encodeURIComponent(next)}`;
         return;
       }
       setSesion(true);
@@ -81,13 +79,10 @@ function TomoView() {
 
       <section style={{ maxWidth: 900, margin: "0 auto", padding: 20 }}>
         {sesion === false && (
-          <div style={card}>
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Inicia sesión para ver el contenido</div>
-            <div style={{ fontSize: 14, color: COLOR.textSec, marginBottom: 14 }}>
-              Este tomo contiene datos personales protegidos. Debes autenticarte con tu usuario del Área Legal.
-            </div>
-            <a href="/login" style={btn}>Ir a iniciar sesión</a>
-          </div>
+          <ConsultaPin
+            destino={{ tipo: "tomo", src, region, anio, tomo }}
+            volver={typeof window !== "undefined" ? window.location.pathname + window.location.search : "/tomo"}
+          />
         )}
 
         {sesion === true && (

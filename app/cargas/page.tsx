@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
 import EmpresaHeader from "../../components/EmpresaHeader";
+import { useRol, esAdmin } from "../../lib/rol";
 
 // ============================================================================
 //  CARGAS — port 1:1 de las tres cargas del app estático a Next.js.
@@ -79,6 +80,7 @@ type Msg = { kind: "" | "ok" | "err"; text: string };
 export default function CargasPage() {
   const [tab, setTab] = useState<"sigm" | "mes" | "sede">("sigm");
   const [sesion, setSesion] = useState<boolean | null>(null);
+  const rol = useRol();
 
   const [sigmFile, setSigmFile] = useState<File | null>(null);
   const [sigmOk, setSigmOk] = useState(false);
@@ -308,6 +310,19 @@ export default function CargasPage() {
 
   if (sesion === null) return <div style={{ padding: 24 }}>Cargando…</div>;
   if (sesion === false) return <div style={{ padding: 24 }}>Redirigiendo a iniciar sesión…</div>;
+  if (rol === undefined) return <div style={{ padding: 24 }}>Cargando…</div>;
+  if (!esAdmin(rol)) {
+    return (
+      <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
+        <EmpresaHeader empresa="globalgo" titulo="Cargas de datos" sub="Alimenta el archivo: garantías, solicitudes y saneamiento físico" />
+        <section style={{ maxWidth: 700, margin: "0 auto", padding: 24 }}>
+          <div style={{ background: "#fff", border: `1px solid ${COLOR.border}`, borderRadius: 12, padding: 18 }}>
+            Las cargas reemplazan datos completos del archivo, por eso solo puede hacerlas un administrador.
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   const TABS: { k: typeof tab; label: string }[] = [
     { k: "sigm", label: "Cargar SIGM (garantías)" },

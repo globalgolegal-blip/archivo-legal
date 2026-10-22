@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
 import EmpresaHeader from "../../components/EmpresaHeader";
+import { useRol, puedeEditar } from "../../lib/rol";
 
 // Libro de cargos: préstamo de expedientes físicos (control de custodia).
 
@@ -33,6 +34,8 @@ function fmt(d: string | null) {
 
 export default function CargosPage() {
   const [sesion, setSesion] = useState<boolean | null>(null);
+  const rol = useRol();
+  const editor = puedeEditar(rol);
   const [userEmail, setUserEmail] = useState("");
 
   // formulario
@@ -134,9 +137,9 @@ export default function CargosPage() {
     <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
       <EmpresaHeader empresa="globalgo" titulo="Libro de cargos" sub="Préstamo de expedientes físicos · control de custodia" />
 
-      <section style={{ maxWidth: 980, margin: "0 auto", padding: 20, display: "grid", gap: 20, gridTemplateColumns: "minmax(280px, 360px) 1fr" }}>
-        {/* Formulario de salida */}
-        <div style={{ border: `1px solid ${COLOR.border}`, borderRadius: 12, background: "#fff", padding: 18, alignSelf: "start" }}>
+      <section style={{ maxWidth: 980, margin: "0 auto", padding: 20, display: "grid", gap: 20, gridTemplateColumns: editor ? "minmax(280px, 360px) 1fr" : "1fr" }}>
+        {/* Formulario de salida (solo editores y administradores) */}
+        {editor && <div style={{ border: `1px solid ${COLOR.border}`, borderRadius: 12, background: "#fff", padding: 18, alignSelf: "start" }}>
           <h2 style={{ marginTop: 0, fontSize: 16 }}>Registrar salida</h2>
 
           <label style={lbl}>Tipo de documento</label>
@@ -179,7 +182,7 @@ export default function CargosPage() {
           {msg.t && (
             <div style={{ marginTop: 10, fontSize: 13, color: msg.k === "ok" ? "#1b7f3b" : msg.k === "err" ? "#b00020" : COLOR.textSec }}>{msg.t}</div>
           )}
-        </div>
+        </div>}
 
         {/* Lista */}
         <div>
@@ -221,7 +224,7 @@ export default function CargosPage() {
                         : <span style={{ color: vencido(f) ? "#b00020" : COLOR.textSec }}>Afuera</span>}
                     </td>
                     <td style={td}>
-                      {!f.fecha_devolucion_real && (
+                      {!f.fecha_devolucion_real && editor && (
                         <button onClick={() => devolver(f.id)} disabled={busy} style={ghost}>Marcar devuelto</button>
                       )}
                     </td>
