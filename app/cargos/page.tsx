@@ -3,7 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
-import Nav from "../../components/Nav";
+import EmpresaHeader from "../../components/EmpresaHeader";
 
 // Libro de cargos: préstamo de expedientes físicos (control de custodia).
 
@@ -132,11 +132,7 @@ export default function CargosPage() {
 
   return (
     <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-      <Nav />
-      <header style={{ background: COLOR.navy, color: "#fff", padding: "18px 28px" }}>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>Libro de cargos</div>
-        <div style={{ fontSize: 13, color: COLOR.navyText, marginTop: 2 }}>Préstamo de expedientes físicos · control de custodia</div>
-      </header>
+      <EmpresaHeader empresa="globalgo" titulo="Libro de cargos" sub="Préstamo de expedientes físicos · control de custodia" />
 
       <section style={{ maxWidth: 980, margin: "0 auto", padding: 20, display: "grid", gap: 20, gridTemplateColumns: "minmax(280px, 360px) 1fr" }}>
         {/* Formulario de salida */}

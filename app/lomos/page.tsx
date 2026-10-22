@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import { EMPRESAS } from "../../lib/empresas";
 import { LomoCard, LomosImpresion, hojasA4, type LomoDatos } from "../../components/Lomo";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
-  import Nav from "../../components/Nav";
+import EmpresaHeader from "../../components/EmpresaHeader";
 
 // Lomos del archivo de Global Go (cada empresa genera sus lomos en su propio apartado).
-const CO = { label: "Global Go", color: "#1369B2", logo: "/global-go.png", pref: "GG" };
+const CO = { label: EMPRESAS.globalgo.nombre, color: EMPRESAS.globalgo.primario, logo: EMPRESAS.globalgo.logo, pref: EMPRESAS.globalgo.pref };
 const MES = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
 
 type Tomo = {
@@ -65,11 +66,7 @@ export default function Lomos() {
 
   return (
     <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-      <div className="noprint"><Nav /></div>
-      <header className="noprint" style={{ background: COLOR.navy, color: "#fff", padding: "18px 28px" }}>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>Lomos con QR</div>
-        <div style={{ fontSize: 13, color: COLOR.navyText, marginTop: 2 }}>Generador de rótulos para los archivadores</div>
-      </header>
+      <EmpresaHeader empresa="globalgo" titulo="Lomos con QR" sub="Generador de rótulos para los archivadores" />
 
       <section className="noprint" style={{ maxWidth: 1100, margin: "0 auto", padding: "20px" }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>

@@ -1,16 +1,16 @@
 import { COLOR } from "../lib/theme";
 
 const EMPRESAS = [
-  { nombre: "Global Go", logo: "/global-go.png", color: "#1369B2",
+  { nombre: "Global Go", logo: "/global-go.png", color: "#1268B1",
     desc: "Garantías mobiliarias, saneamiento del archivo físico y lomos por tomo.",
         activo: true, href: "/login" },
-  { nombre: "Cooperativa Global Go", logo: "/cooperativa.png", color: "#0052FC",
+  { nombre: "Cooperativa Global Go", logo: "/cooperativa.png", color: "#0357FA",
     desc: "Garantías e inscripciones de la Cooperativa de Servicios Múltiples.",
     activo: false, href: "#" },
-  { nombre: "Global Factoring", logo: "/global-factoring.png", color: "#1070B7",
+  { nombre: "Global Factoring", logo: "/global-factoring.png", color: "#1772B8",
     desc: "Contratos, pagarés, letras, procesos y transacciones de factoring.",
     activo: true, href: "/gf" },
-  { nombre: "Global Funding", logo: "/global-funding.png", color: "#3AAA35",
+  { nombre: "Global Funding", logo: "/global-funding.png", color: "#3CAA39",
     desc: "Contratos y documentación de financiamiento.",
     activo: false, href: "#" },
 ];

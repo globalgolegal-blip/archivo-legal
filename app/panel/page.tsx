@@ -3,7 +3,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
-  import Nav from "../../components/Nav";
+import EmpresaHeader from "../../components/EmpresaHeader";
 
 type Row = {
   situacion: string;
@@ -45,13 +45,7 @@ export default function Panel() {
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       }}
     >
-            <Nav />
-      <header style={{ background: COLOR.navy, color: "#fff", padding: "18px 28px" }}>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>Panel · Global Go</div>
-        <div style={{ fontSize: 13, color: COLOR.navyText, marginTop: 2 }}>
-          Empate por situación
-        </div>
-      </header>
+            <EmpresaHeader empresa="globalgo" titulo="Panel · Global Go" sub="Empate por situación" />
 
       <section style={{ maxWidth: 820, margin: "0 auto", padding: "28px 20px" }}>
         {estado === "no-auth" ? (

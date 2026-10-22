@@ -4,7 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
-import Nav from "../../components/Nav";
+import EmpresaHeader from "../../components/EmpresaHeader";
 
 // ============================================================================
 //  CARGAS — port 1:1 de las tres cargas del app estático a Next.js.
@@ -317,11 +317,7 @@ export default function CargasPage() {
 
   return (
     <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-      <Nav />
-      <header style={{ background: COLOR.navy, color: "#fff", padding: "18px 28px" }}>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>Cargas de datos</div>
-        <div style={{ fontSize: 13, color: COLOR.navyText, marginTop: 2 }}>Alimenta el archivo: garantías, solicitudes y saneamiento físico</div>
-      </header>
+      <EmpresaHeader empresa="globalgo" titulo="Cargas de datos" sub="Alimenta el archivo: garantías, solicitudes y saneamiento físico" />
 
       <section style={{ maxWidth: 820, margin: "0 auto", padding: 20 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>

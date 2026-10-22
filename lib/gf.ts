@@ -4,10 +4,12 @@
 // ============================================================================
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import { EMPRESAS } from "./empresas";
 
 export const gf = () => supabase.schema("gf");
 
-export const GF = { label: "Global Factoring", color: "#1070B7", logo: "/global-factoring.png", pref: "GFAC" };
+const _E = EMPRESAS.factoring;
+export const GF = { label: _E.nombre, color: _E.primario, logo: _E.logo, pref: _E.pref };
 
 export const TIPOS_DOC = ["RUC", "DNI", "CE", "PASAPORTE"] as const;
 

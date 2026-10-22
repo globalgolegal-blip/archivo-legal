@@ -3,7 +3,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
-  import Nav from "../../components/Nav";
+import EmpresaHeader from "../../components/EmpresaHeader";
 
 const PAGE = 50;
 
@@ -68,11 +68,7 @@ export default function Base() {
 
   return (
     <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
-            <Nav />
-      <header style={{ background: COLOR.navy, color: "#fff", padding: "18px 28px" }}>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>Base de datos · Global Go</div>
-        <div style={{ fontSize: 13, color: COLOR.navyText, marginTop: 2 }}>Explorador de registros</div>
-      </header>
+            <EmpresaHeader empresa="globalgo" titulo="Base de datos · Global Go" sub="Explorador de registros" />
 
       <section style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 20px" }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 14 }}>

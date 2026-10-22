@@ -1,58 +1,12 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { supabase } from "../lib/supabase";
+import EmpresaHeader from "./EmpresaHeader";
 import { COLOR } from "../lib/theme";
 
-// Encabezado de Global Factoring: es un archivo aparte dentro del Archivo Legal,
-// con su propia barra (no usa la barra de Global Go).
-const TABS = [
-  { href: "/gf", label: "Buscar" },
-  { href: "/gf/registrar", label: "Registrar" },
-  { href: "/gf/lomos", label: "Lomos" },
-];
-
+// Encabezado de Global Factoring: usa la barra y el encabezado únicos del archivo.
 export default function GfHeader({ titulo, sub }: { titulo: string; sub: string }) {
-  const path = usePathname();
-
-  async function salir() {
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  }
-
-  return (
-    <div className="noprint">
-      <nav style={{ background: COLOR.navy, color: "#fff", display: "flex", alignItems: "center", gap: 6, padding: "0 16px", height: 50, overflowX: "auto" }}>
-        <Link href="/" style={{ color: "#fff", fontWeight: 700, fontSize: 14, textDecoration: "none", marginRight: 4, whiteSpace: "nowrap" }}>Archivo Legal</Link>
-        <span style={{ color: COLOR.navyText, fontSize: 14, marginRight: 10, whiteSpace: "nowrap" }}>› Global Factoring</span>
-        <div style={{ display: "flex", gap: 4, flex: 1 }}>
-          {TABS.map((t) => {
-            const activo = path === t.href;
-            return (
-              <a key={t.href} href={t.href} style={{
-                color: activo ? COLOR.navy : "#fff", background: activo ? "#fff" : "transparent",
-                textDecoration: "none", fontSize: 13, fontWeight: activo ? 700 : 500,
-                padding: "7px 12px", borderRadius: 7, whiteSpace: "nowrap",
-              }}>{t.label}</a>
-            );
-          })}
-        </div>
-        <button onClick={salir} style={{ color: "#fff", background: "transparent", border: "1px solid rgba(255,255,255,.4)", borderRadius: 7, padding: "6px 12px", fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>Salir</button>
-      </nav>
-      <header style={{ background: COLOR.navy, color: "#fff", padding: "14px 28px 18px", borderTop: "1px solid rgba(255,255,255,.1)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/global-factoring.png" alt="" style={{ height: 34, background: "#fff", borderRadius: 6, padding: 3 }} />
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 700 }}>{titulo}</div>
-            <div style={{ fontSize: 13, color: COLOR.navyText, marginTop: 2 }}>{sub}</div>
-          </div>
-        </div>
-      </header>
-    </div>
-  );
+  return <EmpresaHeader empresa="factoring" titulo={titulo} sub={sub} />;
 }
 
 export const main: CSSProperties = { minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" };

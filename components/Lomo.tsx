@@ -43,7 +43,7 @@ export function LomoCard(l: LomoDatos) {
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: "0 14px 14px" }}>
         <div style={{ fontSize: 12, letterSpacing: 1, fontWeight: 700, textTransform: "uppercase", color: l.color }}>{l.empresa}</div>
-        {l.tag && <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, padding: "4px 10px", borderRadius: 4, background: "#E6F1FB", color: "#0C447C" }}>{l.tag}</div>}
+        {l.tag && <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, padding: "4px 10px", borderRadius: 4, background: l.color + "1F", color: l.color }}>{l.tag}</div>}
         {l.sub && <div style={{ fontSize: 15, fontWeight: 700 }}>{l.sub}</div>}
         <div>
           {l.label && <div style={{ fontSize: 11, color: "#888", letterSpacing: 3 }}>{l.label}</div>}
