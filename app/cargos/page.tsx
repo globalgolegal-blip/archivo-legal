@@ -9,7 +9,8 @@ import { useRol, puedeEditar } from "../../lib/rol";
 // Libro de cargos: préstamo de expedientes físicos (control de custodia).
 
 const TIPOS = ["DNI", "CARNÉ DE EXTRANJERÍA", "PASAPORTE", "PTP"];
-const AREAS = ["Cobranza", "Operaciones", "Legal", "Finanzas", "Comercial", "Administración", "Otro"];
+// Lista cerrada de solicitantes (la misma en Global Go y Global Factoring).
+const AREAS = ["Legal", "Gerencia", "Operaciones", "Comercial", "Tesorería"];
 
 type Prestamo = {
   id: string;
@@ -29,7 +30,7 @@ const hoy = () => new Date().toISOString().slice(0, 10);
 function fmt(d: string | null) {
   if (!d) return "—";
   const dt = new Date(d);
-  return isNaN(dt as any) ? "—" : dt.toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return isNaN(dt.getTime()) ? "—" : dt.toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 export default function CargosPage() {
@@ -42,8 +43,7 @@ export default function CargosPage() {
   const [tipo, setTipo] = useState("DNI");
   const [doc, setDoc] = useState("");
   const [nombre, setNombre] = useState("");
-  const [area, setArea] = useState("Cobranza");
-  const [otro, setOtro] = useState("");
+  const [area, setArea] = useState(AREAS[0]);
   const [entregado, setEntregado] = useState("");
   const [motivo, setMotivo] = useState("");
   const [esperada, setEsperada] = useState("");
@@ -90,15 +90,13 @@ export default function CargosPage() {
 
   async function registrar() {
     const nd = norm(doc);
-    const solicitante = area === "Otro" ? otro.trim() : area;
     if (!nd) { setMsg({ k: "err", t: "Falta el N° de documento." }); return; }
-    if (!solicitante) { setMsg({ k: "err", t: "Falta el solicitante." }); return; }
     setBusy(true);
     const { error } = await supabase.from("prestamo").insert({
       tipo_documento: tipo,
       numero_documento: nd,
       nombre: nombre.trim() || null,
-      solicitante,
+      solicitante: area,
       entregado_por: entregado.trim() || userEmail || null,
       motivo: motivo.trim() || null,
       fecha_devolucion_esperada: esperada || null,
@@ -108,7 +106,7 @@ export default function CargosPage() {
       setMsg({ k: "err", t: "Error: " + error.message });
     } else {
       setMsg({ k: "ok", t: "Cargo registrado." });
-      setDoc(""); setNombre(""); setOtro(""); setMotivo(""); setEsperada(""); setObs("");
+      setDoc(""); setNombre(""); setMotivo(""); setEsperada(""); setObs("");
       cargar();
     }
     setBusy(false);
@@ -160,9 +158,6 @@ export default function CargosPage() {
           <select value={area} onChange={(e) => setArea(e.target.value)} style={inp}>
             {AREAS.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
-          {area === "Otro" && (
-            <input value={otro} onChange={(e) => setOtro(e.target.value)} style={inp} placeholder="Especifica el solicitante" />
-          )}
 
           <label style={lbl}>Entregado por</label>
           <input value={entregado} onChange={(e) => setEntregado(e.target.value)} style={inp} />
