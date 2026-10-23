@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "../lib/supabase";
@@ -11,12 +12,22 @@ import { useRol, puedeEditar, esAdmin, NOMBRE_ROL } from "../lib/rol";
 //  EmpresaHeader — barra y encabezado únicos para todas las empresas.
 //  Barra azul oscuro común: Archivo Legal › Empresa · pestañas · Salir.
 //  Encabezado: logo + título + subtítulo, con la franja de colores del logo.
+//  Si la cuenta aún tiene contraseña temporal, envía a /cuenta antes de nada.
 // ============================================================================
 export default function EmpresaHeader({ empresa, titulo, sub }: { empresa: EmpresaKey; titulo: string; sub?: string }) {
   const e = EMPRESAS[empresa];
   const path = usePathname();
   const rol = useRol();
   const tabs = e.tabs.filter((t) => !t.min || (t.min === "admin" ? esAdmin(rol) : puedeEditar(rol)));
+
+  // Cambio de contraseña obligatorio en el primer ingreso.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user?.app_metadata?.debe_cambiar_clave && path !== "/cuenta") {
+        window.location.href = "/cuenta";
+      }
+    });
+  }, [path]);
 
   async function salir() {
     await supabase.auth.signOut();
@@ -42,6 +53,7 @@ export default function EmpresaHeader({ empresa, titulo, sub }: { empresa: Empre
           })}
         </div>
         {rol && <span style={{ fontSize: 12, color: COLOR.navyText, whiteSpace: "nowrap", marginRight: 4 }}>{NOMBRE_ROL[rol]}</span>}
+        <a href="/cuenta" title="Cambiar mi contraseña" style={{ color: "#fff", textDecoration: "none", fontSize: 13, padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(255,255,255,.25)", whiteSpace: "nowrap", marginRight: 4 }}>Mi cuenta</a>
         {esAdmin(rol) && empresa !== "admin" && (
           <a href="/admin" style={{ color: "#fff", textDecoration: "none", fontSize: 13, padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(255,255,255,.25)", whiteSpace: "nowrap", marginRight: 4 }}>Administración</a>
         )}
