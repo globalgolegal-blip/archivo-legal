@@ -15,8 +15,9 @@ export default function Cuenta() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const u = data.session?.user;
+    // getUser consulta al servidor: trae la marca actualizada, no la de la credencial guardada.
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user;
       if (!u) { window.location.href = "/login?next=/cuenta"; return; }
       setEmail(u.email ?? "");
       setObligatorio(!!u.app_metadata?.debe_cambiar_clave);
@@ -38,8 +39,10 @@ export default function Cuenta() {
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { setMsg({ k: "err", t: j.error || "No se pudo guardar." }); setBusy(false); return; }
-    // Renueva la sesión para que ya no lleve la marca de cambio obligatorio.
-    await supabase.auth.refreshSession();
+    // Vuelve a iniciar sesión con la contraseña nueva: así la credencial del
+    // navegador ya no lleva la marca de cambio obligatorio.
+    const re = await supabase.auth.signInWithPassword({ email: email || "", password: c1 });
+    if (re.error) await supabase.auth.refreshSession();
     setMsg({ k: "ok", t: "Contraseña guardada. Entrando…" });
     window.location.href = "/";
   }
