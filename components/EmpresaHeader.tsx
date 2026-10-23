@@ -22,8 +22,9 @@ export default function EmpresaHeader({ empresa, titulo, sub }: { empresa: Empre
 
   // Cambio de contraseña obligatorio en el primer ingreso.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user?.app_metadata?.debe_cambiar_clave && path !== "/cuenta") {
+    // getUser consulta al servidor (no la credencial guardada, que puede estar desactualizada).
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.app_metadata?.debe_cambiar_clave && path !== "/cuenta") {
         window.location.href = "/cuenta";
       }
     });
