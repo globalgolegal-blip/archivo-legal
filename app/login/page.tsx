@@ -5,11 +5,12 @@ import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
 
 // Destino tras iniciar sesión: ?next si es una ruta interna (p. ej. el QR de
-// un tomo), o la portada. Si la cuenta tiene contraseña temporal, primero /cuenta.
+// un tomo), o el Panel de Global Go. Nunca la portada: la portada envía a
+// /login y se formaría un bucle. Si la cuenta tiene contraseña temporal, primero /cuenta.
 function destino() {
-  if (typeof window === "undefined") return "/";
+  if (typeof window === "undefined") return "/panel";
   const n = new URLSearchParams(window.location.search).get("next");
-  return n && n.startsWith("/") && !n.startsWith("//") ? n : "/";
+  return n && n.startsWith("/") && !n.startsWith("//") && n !== "/" && !n.startsWith("/login") ? n : "/panel";
 }
 function irDespues(debeCambiar: boolean) {
   window.location.href = debeCambiar ? "/cuenta" : destino();
