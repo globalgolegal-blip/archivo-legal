@@ -40,7 +40,10 @@ export default function Base() {
           { count: "exact" }
         );
       if (sit) query = query.eq("situacion", sit);
-      if (pla) query = query.eq("falta_placa", pla === "1");
+      // "Pendiente de modificación" = garantía vigente sin placa (marca falta_placa de la base).
+      // "Con placa" = la placa tiene un valor (antes también colaba a quienes no tienen garantía).
+      if (pla === "1") query = query.eq("falta_placa", true);
+      else if (pla === "0") query = query.not("placa", "is", null).neq("placa", "");
       if (q.trim()) {
         const like = "%" + q.trim().replace(/[%,]/g, "") + "%";
         query = query.or(`numero_documento.ilike.${like},nombre.ilike.${like}`);
@@ -79,7 +82,7 @@ export default function Base() {
           </select>
           <select value={pla} onChange={(e) => { setPla(e.target.value); setPage(0); }} style={inp}>
             <option value="">Placa: todas</option>
-            <option value="1">Falta placa</option>
+            <option value="1">Pendiente de modificación</option>
             <option value="0">Con placa</option>
           </select>
           <button onClick={buscar} style={btn}>Buscar</button>
@@ -103,7 +106,7 @@ export default function Base() {
                   <td style={td}>{r.numero_documento}</td>
                   <td style={td}>{r.nombre}</td>
                   <td style={td}>{(r.folio || "—") + (r.estado_garantia ? " · " + r.estado_garantia : "")}</td>
-                  <td style={td}>{r.falta_placa ? <span style={{ color: "#A32D2D", fontWeight: 600 }}>⚠ falta</span> : (r.placa || "—")}</td>
+                  <td style={td}>{r.falta_placa ? <span style={{ color: "#A32D2D", fontWeight: 600 }} title="Garantía vigente sin placa: falta incorporarla con un formulario de modificación">⚠ pendiente de modificación</span> : (r.placa || "—")}</td>
                   <td style={td}>{fisico(r)}</td>
                 </tr>
               ))}
