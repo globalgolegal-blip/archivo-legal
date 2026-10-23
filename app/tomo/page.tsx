@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, type CSSProperties } from "react";
+import { Suspense, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { COLOR } from "../../lib/theme";
@@ -23,6 +23,8 @@ function fecha(d: string | null) {
   const p = d.split("-");
   return `${p[2] || ""} ${MES[(+p[1] || 1) - 1]} ${p[0]}`.trim();
 }
+// Normaliza para buscar sin tildes ni mayúsculas.
+const norm = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 function TomoView() {
   const sp = useSearchParams();
@@ -34,6 +36,7 @@ function TomoView() {
   const [sesion, setSesion] = useState<boolean | null>(null);
   const [filas, setFilas] = useState<Fila[]>([]);
   const [msg, setMsg] = useState("Cargando…");
+  const [q, setQ] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -45,11 +48,11 @@ function TomoView() {
       }
       setSesion(true);
 
-      let q = supabase.from("v_tomo_detalle").select("*").eq("tomo", tomo);
-      if (src === "lima") q = q.eq("src", "lima").eq("anio", anio);
-      else q = q.eq("src", "fisico").eq("region", region);
+      let q2 = supabase.from("v_tomo_detalle").select("*").eq("tomo", tomo);
+      if (src === "lima") q2 = q2.eq("src", "lima").eq("anio", anio);
+      else q2 = q2.eq("src", "fisico").eq("region", region);
 
-      const { data, error } = await q;
+      const { data, error } = await q2;
       if (error) { setMsg(error.message); return; }
       const f = (data ?? []) as Fila[];
       // Orden: provincias por fecha de firma; Lima por nombre.
@@ -65,6 +68,13 @@ function TomoView() {
 
   const esLima = src === "lima";
   const titulo = esLima ? `LIMA · ${anio}` : region;
+
+  // Filtro dentro del tomo (por documento o nombre). No consulta la base de nuevo.
+  const vis = useMemo(() => {
+    const t = norm(q.trim());
+    if (!t) return filas;
+    return filas.filter((f) => norm(`${f.numero_documento || ""} ${f.nombre || ""}`).includes(t));
+  }, [filas, q]);
 
   return (
     <main style={{ minHeight: "100vh", background: COLOR.bg, color: COLOR.text, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" }}>
@@ -87,8 +97,22 @@ function TomoView() {
 
         {sesion === true && (
           <>
+            {filas.length > 0 && (
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Buscar en este tomo (documento o nombre)…"
+                style={{
+                  width: "100%", fontSize: 14, padding: "10px 12px", marginBottom: 10,
+                  border: `1px solid ${COLOR.border}`, borderRadius: 8, boxSizing: "border-box", background: "#fff",
+                }}
+              />
+            )}
+
             <div style={{ fontSize: 13, color: COLOR.textSec, margin: "4px 0 12px" }}>
-              {msg || `${filas.length} expediente(s) en este tomo`}
+              {msg || (q.trim()
+                ? `${vis.length} de ${filas.length} expediente(s)`
+                : `${filas.length} expediente(s) en este tomo`)}
             </div>
 
             {filas.length > 0 && (
@@ -109,7 +133,10 @@ function TomoView() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filas.map((f, i) => (
+                    {vis.length === 0 && (
+                      <tr><td style={td} colSpan={esLima ? 2 : 4}>Sin coincidencias para “{q}”.</td></tr>
+                    )}
+                    {vis.map((f, i) => (
                       <tr key={i} style={{ borderTop: `1px solid ${COLOR.border}` }}>
                         <td style={td}>{i + 1}</td>
                         {esLima ? (
