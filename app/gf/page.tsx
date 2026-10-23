@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import GfHeader, { main, inp, btn, btnGhost, card } from "../../components/GfHeader";
 import ConsultaPin, { type DestinoQR } from "../../components/ConsultaPin";
 import { useRol, puedeEditar, esAdmin } from "../../lib/rol";
@@ -27,6 +27,8 @@ const SECCIONES: { k: DocKey | "proceso"; label: string }[] = [
 ];
 const SEL = "*, contraparte:contraparte_id(tipo_documento, numero_documento, nombre)";
 const nombreCp = (r: Fila) => r.contraparte ? (r.contraparte.nombre || "") + " · " + docTexto(r.contraparte) : "";
+// Normaliza texto para el filtro dentro del archivador (sin tildes ni mayúsculas).
+const normTxt = (s: string) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 // Destino del QR del lomo (?exp=… o ?folder=tipo|folder), para la consulta con PIN
 function destinoQR(): DestinoQR | null {
@@ -49,6 +51,7 @@ export default function GfBuscar() {
   const [sel, setSel] = useState<Resumen | null>(null);
   const [datos, setDatos] = useState<Record<string, Fila[]>>({});
   const [vista, setVista] = useState<{ titulo: string; tabla: DocKey | "proceso"; filas: Fila[] } | null>(null);
+  const [vq, setVq] = useState(""); // filtro dentro del archivador abierto por el QR
   const [msg, setMsg] = useState("");
   const [sug, setSug] = useState<Resumen[]>([]);
   const sinSug = useRef(false); // tras presionar Buscar no se muestran sugerencias hasta volver a escribir
@@ -136,12 +139,14 @@ export default function GfBuscar() {
   }
 
   async function abrirExpediente(base: string) {
+    setVq("");
     const { data, error } = await gf().from("proceso").select(SEL).eq("expediente_base", base).order("expediente");
     if (error) { setMsg(error.message); return; }
     setVista({ titulo: `Archivador del expediente ${base}`, tabla: "proceso", filas: data ?? [] });
   }
 
   async function abrirFolder(param: string) {
+    setVq("");
     const [tipo, folder] = param.split("|") as [DocKey, string];
     if (!DOCS[tipo]) { setMsg("Folder no reconocido."); return; }
     const { data, error } = await gf().from(DOCS[tipo].tabla).select(SEL).eq("folder", normFolder(folder || "")).order(DOCS[tipo].fecha);
@@ -163,6 +168,19 @@ export default function GfBuscar() {
     if (sel) abrir(sel);
     else if (vista) setVista({ ...vista, filas: vista.filas.filter((f) => f.id !== id) });
   }
+
+  // Filtro dentro del archivador abierto por el QR (por contraparte, documento,
+  // expediente, folder, etc.). No consulta la base de nuevo.
+  const visFilas = useMemo(() => {
+    if (!vista) return [];
+    const t = normTxt(vq.trim());
+    if (!t) return vista.filas;
+    const cols = COLS[vista.tabla];
+    return vista.filas.filter((r) => {
+      const txt = nombreCp(r) + " " + cols.map((c) => (c.f ? c.f(r) : (r[c.k] ?? ""))).join(" ");
+      return normTxt(txt).includes(t);
+    });
+  }, [vista, vq]);
 
   function Tabla({ tabla, filas, conCp }: { tabla: DocKey | "proceso"; filas: Fila[]; conCp?: boolean }) {
     const cols = COLS[tabla];
@@ -247,8 +265,21 @@ export default function GfBuscar() {
 
         {vista && (
           <div style={card}>
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>{vista.titulo} <span style={{ fontWeight: 400, color: "#5F5E5A", fontSize: 13 }}>· {vista.filas.length} registro(s)</span></div>
-            {vista.filas.length ? <Tabla tabla={vista.tabla} filas={vista.filas} conCp /> : <div style={{ fontSize: 14, color: "#5F5E5A" }}>Este archivador está vacío.</div>}
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
+              {vista.titulo}{" "}
+              <span style={{ fontWeight: 400, color: "#5F5E5A", fontSize: 13 }}>
+                · {vq.trim() ? `${visFilas.length} de ${vista.filas.length}` : vista.filas.length} registro(s)
+              </span>
+            </div>
+            {vista.filas.length > 0 && (
+              <input value={vq} onChange={(e) => setVq(e.target.value)} placeholder="Buscar en este archivador (contraparte, documento, expediente, folder…)"
+                style={{ ...inp, marginBottom: 12 }} />
+            )}
+            {vista.filas.length
+              ? (visFilas.length
+                  ? <Tabla tabla={vista.tabla} filas={visFilas} conCp />
+                  : <div style={{ fontSize: 14, color: "#5F5E5A" }}>Sin coincidencias para “{vq}”.</div>)
+              : <div style={{ fontSize: 14, color: "#5F5E5A" }}>Este archivador está vacío.</div>}
           </div>
         )}
 
