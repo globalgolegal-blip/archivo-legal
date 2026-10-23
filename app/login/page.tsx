@@ -23,8 +23,8 @@ export default function Login() {
 
   // Si ya hay sesión, redirige de una.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const u = data.session?.user;
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user;
       if (u) irDespues(!!u.app_metadata?.debe_cambiar_clave);
       else setChecando(false);
     });
